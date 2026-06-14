@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>🎂 Birthday Adventure!</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
+<style>
+/* ─── TOKENS ─────────────────────────────────────── */
+:root{
+  --cream:#FFF8F0; --mint:#C8F0D8; --yellow:#FFF3B0;
+  --lav:#E8D5FF;   --coral:#FFB5BA; --green:#5BAD6F;
+  --purple:#9B6FBE; --duck:#F5C842;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{font-family:'Nunito',sans-serif;background:var(--cream);overflow:hidden}
+
+/* ─── STAR FIELD ──────────────────────────────────── */
+#starField{position:fixed;inset:0;pointer-events:none;z-index:1;overflow:hidden}
+.star-e{
+  position:absolute;font-size:var(--sz,1rem);opacity:0;user-select:none;
+  animation:floatS var(--dur,4s) ease-in-out infinite var(--dl,0s);
+}
+@keyframes floatS{
+  0%{opacity:0;transform:translateY(0) rotate(0deg) scale(.6)}
+  35%{opacity:.85}65%{opacity:.7}
+  100%{opacity:0;transform:translateY(-70px) rotate(360deg) scale(1.1)}
+}
+
+/* ─── PAGE SYSTEM ─────────────────────────────────── */
+.page{
+  position:fixed;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;padding:1rem 1.2rem;
+  opacity:0;pointer-events:none;transition:opacity .5s cubic-bezier(.4,0,.2,1);
+  z-index:10;overflow-y:auto;
+}
+.page.active{opacity:1;pointer-events:all}
+
+/* bg gradients */
+#p1{background:linear-gradient(145deg,#FFF8F0 0%,#FFF3B0 55%,#C8F0D8 100%)}
+#p2{background:linear-gradient(145deg,#FFF9E6 0%,#FFE8B0 100%)}
+#p3{background:linear-gradient(145deg,#EDF9F0 0%,#C8F0D8 60%,#E8D5FF 100%)}
+#p4{background:linear-gradient(145deg,#FFF0F3 0%,#FFB5BA 60%,#FFF3B0 100%)}
+#p5{background:linear-gradient(145deg,#F5EEFF 0%,#E8D5FF 60%,#C8F0D8 100%)}
+#p6{background:linear-gradient(145deg,#FFFBE6 0%,#FFF3B0 50%,#FFB5BA 100%)}
+#p7{background:linear-gradient(145deg,#C8F0D8 0%,#FFF3B0 45%,#E8D5FF 100%)}
+
+/* ─── MASCOTS ─────────────────────────────────────── */
+.mascot-img{
+  display:inline-block;border-radius:50%;object-fit:cover;
+  animation:bobble 2.2s ease-in-out infinite;
+  filter:drop-shadow(0 8px 16px rgba(0,0,0,.13));
+}
+.mascot-img.duck{animation-duration:1.9s}
+.mascot-img.frog{animation-duration:2.4s;animation-delay:.3s}
+@keyframes bobble{
+  0%,100%{transform:translateY(0) rotate(-3deg)}
+  50%{transform:translateY(-14px) rotate(3deg)}
+}
+
+/* ─── BUTTONS ─────────────────────────────────────── */
+.btn-launch{
+  font-family:'Fredoka One',cursive;font-size:1.45rem;
+  padding:.85rem 2.5rem;border-radius:9999px;border:none;cursor:pointer;
+  background:linear-gradient(135deg,#5BAD6F,#44915a);color:#fff;
+  box-shadow:0 6px 24px rgba(91,173,111,.45);
+  animation:btnBounce 1.9s ease-in-out infinite;transition:transform .15s;
+}
+.btn-launch:hover{animation:none;transform:scale(1.08)}
+@keyframes btnBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+
+.btn-next{
+  font-family:'Fredoka One',cursive;font-size:1.05rem;
+  padding:.6rem 1.8rem;border-radius:9999px;border:none;cursor:pointer;
+  background:linear-gradient(135deg,#9B6FBE,#7a52a0);color:#fff;
+  box-shadow:0 4px 16px rgba(155,111,190,.4);transition:transform .15s,box-shadow .15s;
+}
+.btn-next:hover{transform:scale(1.06)}
+
+.btn-outline{
+  font-family:'Fredoka One',cursive;font-size:1rem;
+  padding:.55rem 1.5rem;border-radius:9999px;cursor:pointer;
+  background:transparent;border:2.5px solid #9B6FBE;color:#7a52a0;
+  transition:all .15s;
+}
+.btn-outline:hover{background:#9B6FBE;color:#fff}
+
+/* ─── PROGRESS DOTS ──────────────────────────────── */
+.dots{display:flex;gap:.5rem;justify-content:center;margin-bottom:.7rem}
+.dot{
+  width:11px;height:11px;border-radius:50%;
+  background:rgba(255,255,255,.45);border:2px solid rgba(155,111,190,.35);
+  transition:all .3s;
+}
+.dot.done{background:#5BAD6F;border-color:#5BAD6F;transform:scale(1.25)}
+.dot.active{background:#9B6FBE;border-color:#9B6FBE;transform:scale(1.2)}
+
+/* ─── CLUE BANNER ─────────────────────────────────── */
+.clue-box{
+  background:rgba(255,255,255,.72);backdrop-filter:blur(8px);
+  border:2px dashed #9B6FBE;border-radius:20px;
+  padding:.75rem 1.1rem;margin-bottom:1rem;
+  font-weight:800;font-size:.95rem;color:#5a3a80;
+  text-align:center;max-width:400px;width:100%;
+  position:relative;
+}
+.clue-icon{font-size:1.4rem;margin-right:.35rem;vertical-align:middle}
+
+/* ─── TREASURE GRID ──────────────────────────────── */
+.hunt-grid{
+  display:grid;grid-template-columns:repeat(2,1fr);
+  gap:.85rem;width:100%;max-width:420px;margin:0 auto;
+}
+.hunt-cell{
+  background:rgba(255,255,255,.65);backdrop-filter:blur(6px);
+  border:2.5px solid rgba(255,255,255,.8);border-radius:22px;
+  padding:.9rem .5rem;display:flex;flex-direction:column;
+  align-items:center;gap:.4rem;cursor:pointer;
+  transition:transform .22s,border-color .22s,box-shadow .22s;
+  box-shadow:0 4px 16px rgba(0,0,0,.07);
+  position:relative;overflow:hidden;
+}
+.hunt-cell::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(255,255,255,.35),transparent);
+  pointer-events:none;
+}
+.hunt-cell:hover{
+  transform:translateY(-6px) scale(1.05);
+  border-color:#9B6FBE;box-shadow:0 10px 28px rgba(155,111,190,.3);
+}
+.hunt-cell .food-e{font-size:3rem;line-height:1;transition:transform .2s}
+.hunt-cell:hover .food-e{transform:scale(1.15) rotate(-5deg)}
+.hunt-cell .food-lbl{
+  font-family:'Nunito',sans-serif;font-weight:800;font-size:.82rem;
+  text-align:center;color:#555;line-height:1.2;
+}
+/* hidden shimmer on cells (treasure feel) */
+.hunt-cell.shimmer::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(110deg,transparent 30%,rgba(255,255,255,.6) 50%,transparent 70%);
+  animation:shimmerSlide .8s ease forwards;
+}
+@keyframes shimmerSlide{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+
+.hunt-cell.wrong{
+  animation:shake .4s ease;
+  border-color:#FF7B7B;background:rgba(255,200,200,.5);
+}
+@keyframes shake{
+  0%,100%{transform:translateX(0)}20%{transform:translateX(-9px)}
+  40%{transform:translateX(9px)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}
+}
+
+/* ─── CHEST REVEAL ────────────────────────────────── */
+.chest-reveal{
+  animation:chestPop .5s cubic-bezier(.175,.885,.32,1.275) forwards;
+  font-size:4.5rem;
+}
+@keyframes chestPop{
+  0%{transform:scale(0) rotate(-15deg)}80%{transform:scale(1.15) rotate(5deg)}
+  100%{transform:scale(1) rotate(0deg)}
+}
+
+/* ─── MODAL ───────────────────────────────────────── */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.4);
+  display:flex;align-items:center;justify-content:center;
+  z-index:200;padding:1rem;
+  opacity:0;pointer-events:none;transition:opacity .3s;
+}
+.modal-overlay.open{opacity:1;pointer-events:all}
+.modal-box{
+  background:#fff;border-radius:28px;
+  padding:1.8rem 1.5rem;max-width:380px;width:100%;
+  text-align:center;
+  box-shadow:0 24px 64px rgba(0,0,0,.22);
+  transform:scale(.75) translateY(24px);
+  transition:transform .38s cubic-bezier(.175,.885,.32,1.275);
+  position:relative;overflow:hidden;max-height:90vh;overflow-y:auto;
+}
+.modal-overlay.open .modal-box{transform:scale(1) translateY(0)}
+.modal-box::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:6px;
+  background:linear-gradient(90deg,#5BAD6F,#9B6FBE,#F5C842);
+}
+
+/* ─── PHOTO UPLOAD ZONE ──────────────────────────── */
+.photo-zone{
+  border:2.5px dashed #C8A0E0;border-radius:18px;
+  padding:1rem;margin-top:1rem;cursor:pointer;
+  background:rgba(232,213,255,.25);
+  transition:border-color .2s,background .2s;
+  position:relative;
+}
+.photo-zone:hover{border-color:#9B6FBE;background:rgba(232,213,255,.45)}
+.photo-zone input[type=file]{
+  position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;
+}
+.photo-preview{
+  width:100%;max-height:160px;object-fit:cover;
+  border-radius:12px;margin-top:.6rem;display:none;
+  box-shadow:0 4px 14px rgba(0,0,0,.12);
+}
+.photo-preview.visible{display:block}
+.photo-label{
+  font-weight:800;font-size:.82rem;color:#9B6FBE;
+  display:flex;flex-direction:column;align-items:center;gap:.3rem;
+}
+
+/* ─── MUSIC BTN ───────────────────────────────────── */
+#musicBtn{
+  position:fixed;top:.85rem;right:.85rem;z-index:500;
+  background:rgba(255,255,255,.88);border:2px solid #E8D5FF;
+  border-radius:9999px;padding:.38rem .9rem;
+  font-size:1.25rem;cursor:pointer;
+  backdrop-filter:blur(8px);
+  box-shadow:0 4px 14px rgba(155,111,190,.25);
+  transition:transform .15s;
+  font-family:'Nunito',sans-serif;font-weight:800;
+}
+#musicBtn:hover{transform:scale(1.12)}
+
+/* ─── TOAST ───────────────────────────────────────── */
+.toast{
+  position:fixed;bottom:1.5rem;left:50%;
+  transform:translateX(-50%) translateY(90px);
+  background:#fff;border:2.5px solid #FFB5BA;
+  border-radius:9999px;padding:.55rem 1.4rem;
+  font-family:'Nunito',sans-serif;font-weight:800;font-size:.95rem;
+  color:#c05070;box-shadow:0 6px 20px rgba(255,100,100,.2);
+  z-index:600;transition:transform .35s cubic-bezier(.175,.885,.32,1.275),opacity .3s;
+  opacity:0;white-space:nowrap;
+}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+
+/* ─── FINALE CONFETTI ─────────────────────────────── */
+.conf-piece{
+  position:absolute;font-size:var(--sz,1.5rem);pointer-events:none;
+  animation:confFall var(--dur,5s) ease-in-out infinite var(--dl,0s);
+}
+@keyframes confFall{
+  0%{transform:translateY(-30px) rotate(0deg) scale(1);opacity:1}
+  100%{transform:translateY(110vh) rotate(720deg) scale(.5);opacity:0}
+}
+
+/* ─── MISC ────────────────────────────────────────── */
+.fredoka{font-family:'Fredoka One',cursive}
+.wiggle{animation:wiggle 1.4s ease-in-out infinite}
+@keyframes wiggle{
+  0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}
+}
+/* map/scroll parchment feel on hunt stages */
+.parchment{
+  background:rgba(255,252,240,.82);backdrop-filter:blur(6px);
+  border:2px solid rgba(240,220,160,.7);border-radius:24px;
+  box-shadow:0 6px 24px rgba(180,140,60,.12);
+}
+
+@media(max-width:420px){
+  .hunt-cell .food-e{font-size:2.3rem}
+  .btn-launch{font-size:1.1rem;padding:.7rem 1.8rem}
+  .mascot-img{width:80px!important;height:80px!important}
+}
+</style>
+</head>
+<body>
+
+<!-- STAR FIELD -->
+<div id="starField"></div>
+
+<!-- MUSIC -->
+<button id="musicBtn" title="Toggle music">🎵</button>
+<audio id="bgMusic" loop preload="auto">
+  <source src="https://files.freemusicarchive.org/storage-freemusicarchive-org/music/WFMU/Komiku/Poupis_incredible_adventures__/Komiku_-_01_-_Start.mp3" type="audio/mpeg"/>
+</audio>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- ════════════════════════════════════════════════
+     MODAL — SUCCESS + PHOTO UPLOAD
+════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal">
+  <div class="modal-box">
+    <div id="modalEmoji" style="font-size:3.8rem;margin-bottom:.4rem"></div>
+    <h2 class="fredoka text-2xl text-purple-700 mb-2" id="modalTitle"></h2>
+    <p class="text-gray-600 font-semibold leading-relaxed text-sm mb-4" id="modalMsg"></p>
+
+    <!-- PHOTO ZONE -->
+    <div class="photo-zone" id="photoZone">
+      <input type="file" id="photoInput" accept="image/*"/>
+      <div class="photo-label">
+        <span style="font-size:2rem">📸</span>
+        <span>Drop a photo here to mark the moment!</span>
+        <span style="font-size:.75rem;color:#bbb;font-weight:600">tap to choose from your camera roll</span>
+      </div>
+      <img id="photoPreview" class="photo-preview" alt="Your photo"/>
+      <div id="photoCaption" style="display:none;margin-top:.5rem">
+        <input id="captionInput" type="text" placeholder="Add a little caption... ✨"
+          style="width:100%;border:1.5px solid #E8D5FF;border-radius:12px;padding:.4rem .75rem;
+                 font-family:'Nunito',sans-serif;font-size:.82rem;font-weight:700;color:#555;outline:none"/>
+      </div>
+    </div>
+
+    <div class="flex gap-2 mt-4 justify-center flex-wrap">
+      <button class="btn-next" id="modalNextBtn">Next Stage ✨</button>
+      <button class="btn-outline" id="modalSkipPhoto">Skip photo</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════════
+     PAGE 1 — LANDING
+════════════════════════════════════════════════ -->
+<section class="page active" id="p1">
+  <div class="text-center px-4 max-w-md relative z-10">
+
+    <!-- Real mascot images via DiceBear (deterministic cute SVG avatars) + Picsum -->
+    <div class="flex justify-center items-end gap-4 mb-3">
+      <!-- Duck: using a cute illustrated duck SVG avatar -->
+      <div style="position:relative;display:inline-block">
+        <img class="mascot-img duck"
+          src="images/frog.jpg"
+          width="110" height="110" alt="Cute duck mascot"
+          onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ccircle cx=%2250%22 cy=%2250%22 r=%2248%22 fill=%22%23FFD700%22/%3E%3Ctext x=%2250%22 y=%2268%22 text-anchor=%22middle%22 font-size=%2260%22%3E🦆%3C/text%3E%3C/svg%3E'"/>
+        <span style="position:absolute;top:-10px;right:-6px;font-size:1.6rem;transform:rotate(15deg);display:inline-block">🎉</span>
+      </div>
+      <!-- Frog -->
+      <div style="position:relative;display:inline-block">
+        <img class="mascot-img frog"
+          src="https://api.dicebear.com/8.x/fun-emoji/svg?seed=frog&backgroundColor=a8e6cf&eyes=wink,cute&mouth=adorableSmile"
+          width="96" height="96" alt="Cute frog mascot"
+          onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ccircle cx=%2250%22 cy=%2250%22 r=%2248%22 fill=%22%2390EE90%22/%3E%3Ctext x=%2250%22 y=%2268%22 text-anchor=%22middle%22 font-size=%2260%22%3E🐸%3C/text%3E%3C/svg%3E'"/>
+        <span style="position:absolute;top:-10px;left:-6px;font-size:1.6rem;transform:rotate(-15deg);display:inline-block">🎊</span>
+      </div>
+    </div>
+
+    <h1 class="fredoka text-3xl sm:text-4xl text-green-700 leading-tight mb-2">
+      Would you like to go on a<br/>birthday adventure? 🌟
+    </h1>
+    <p class="text-gray-500 font-semibold text-sm sm:text-base mb-6 leading-relaxed">
+      Five secret food stages await 🗺️ — your little guides will help you find them all!
+    </p>
+    <button class="btn-launch" id="startBtn">Heck yes, let's go! 🚀</button>
+
+    <div class="flex justify-center gap-5 mt-6">
+      <img src="https://api.dicebear.com/8.x/fun-emoji/svg?seed=star1&backgroundColor=fff3b0&eyes=wink&mouth=adorableSmile"
+        width="42" height="42" style="border-radius:50%;animation:bobble 2s ease-in-out infinite" alt=""/>
+      <img src="https://api.dicebear.com/8.x/fun-emoji/svg?seed=flower&backgroundColor=ffb5ba&eyes=cute&mouth=adorableSmile"
+        width="42" height="42" style="border-radius:50%;animation:bobble 2.3s ease-in-out .3s infinite" alt=""/>
+      <img src="https://api.dicebear.com/8.x/fun-emoji/svg?seed=star2&backgroundColor=e8d5ff&eyes=wink&mouth=adorableSmile"
+        width="42" height="42" style="border-radius:50%;animation:bobble 1.8s ease-in-out .6s infinite" alt=""/>
+    </div>
+  </div>
+</section>
+
+
+<!-- ════════════════════════════════════════════════
+     STAGE PAGES 2–6 (hunt pages)
+     Built dynamically below by JS stageEngine
+════════════════════════════════════════════════ -->
+<section class="page" id="p2"></section>
+<section class="page" id="p3"></section>
+<section class="page" id="p4"></section>
+<section class="page" id="p5"></section>
+<section class="page" id="p6"></section>
+
+
+<!-- ════════════════════════════════════════════════
+     PAGE 7 — GRAND FINALE
+════════════════════════════════════════════════ -->
+<section class="page" id="p7">
+  <div id="confLayer" style="position:absolute;inset:0;overflow:hidden;pointer-events:none"></div>
+  <div class="text-center px-4 max-w-lg relative z-10">
+
+    <div class="flex justify-center gap-3 mb-2 flex-wrap">
+      <img class="mascot-img duck"
+        src="https://api.dicebear.com/8.x/fun-emoji/svg?seed=duck&backgroundColor=ffd700&eyes=wink&mouth=adorableSmile"
+        width="90" height="90" alt="duck"/>
+      <img class="mascot-img frog"
+        src="https://api.dicebear.com/8.x/fun-emoji/svg?seed=frog&backgroundColor=a8e6cf&eyes=cute&mouth=adorableSmile"
+        width="80" height="80" alt="frog" style="animation-delay:.25s"/>
+      <img class="mascot-img duck"
+        src="https://api.dicebear.com/8.x/fun-emoji/svg?seed=duck2&backgroundColor=ffd700&eyes=wink&mouth=adorableSmile"
+        width="90" height="90" alt="duck" style="animation-delay:.5s"/>
+      <img class="mascot-img frog"
+        src="https://api.dicebear.com/8.x/fun-emoji/svg?seed=frog2&backgroundColor=a8e6cf&eyes=cute&mouth=adorableSmile"
+        width="72" height="72" alt="frog" style="animation-delay:.15s"/>
+    </div>
+
+    <h1 class="fredoka text-3xl sm:text-4xl text-green-700 mt-1 mb-3 leading-tight">
+      Hooray! Adventure complete! 🎂
+    </h1>
+
+    <div class="parchment p-4 mb-4 max-w-sm mx-auto">
+      <p class="fredoka text-xl text-purple-700 mb-1">Bye bye now! 👋</p>
+      <p class="text-gray-600 font-semibold leading-relaxed text-sm">
+        Go eat some real food (maybe a bagel?) and have the happiest, most magical birthday ever! 🦆💚🐸
+      </p>
+      <!-- Photo scrapbook appears here -->
+      <div id="scrapbook" style="display:none;margin-top:1rem">
+        <p class="fredoka text-base text-purple-600 mb-2">Your adventure scrapbook 📷</p>
+        <div id="scrapItems" style="display:flex;flex-wrap:wrap;gap:.5rem;justify-content:center"></div>
+      </div>
+    </div>
+
+    <div class="flex gap-3 justify-center flex-wrap">
+      <button class="btn-launch" id="replayBtn" style="font-size:1rem;padding:.65rem 1.6rem">
+        🔁 Replay Adventure
+      </button>
+    </div>
+    <p class="mt-4 text-gray-400 font-bold text-xs">Made with 💚 just for you</p>
+  </div>
+</section>
+
+
+<!-- ════════════════════════════════════════════════════════════════
+     JAVASCRIPT
+════════════════════════════════════════════════════════════════ -->
+<script>
+/* ══════════ STAR FIELD ══════════ */
+(function(){
+  const f=document.getElementById('starField');
+  const em=['⭐','🌟','✨','💫','🌸','🍀','🌙','🔮'];
+  for(let i=0;i<38;i++){
+    const e=document.createElement('span');
+    e.className='star-e';
+    e.textContent=em[Math.floor(Math.random()*em.length)];
+    e.style.setProperty('--sz',(0.65+Math.random()*1.3)+'rem');
+    e.style.setProperty('--dur',(3+Math.random()*5)+'s');
+    e.style.setProperty('--dl',(Math.random()*7)+'s');
+    e.style.left=Math.random()*100+'vw';
+    e.style.top=(5+Math.random()*88)+'vh';
+    f.appendChild(e);
+  }
+})();
+
+/* ══════════ STAGE DATA ══════════ */
+const STAGES=[
+  {
+    page:2,
+    title:'Stage 1: The Sushi Scroll 🗺️',
+    guide:'duck',
+    clue:'🔍 Clue: "I\'m not from Italy, I\'m from Japan… rolled up and fried, I\'m quite the plan!"',
+    hint:'Psst — look for something both rolled AND crispy! 🍤',
+    foods:[
+      {e:'🍕',l:'Pizza',ok:false},
+      {e:'🌮',l:'Tacos',ok:false},
+      {e:'🍣🍤',l:'Sushi Tempura',ok:true},
+      {e:'🍔',l:'Burger',ok:false},
+    ],
+    correctEmoji:'🍣🍤',
+    modalTitle:'You found the Sushi Tempura!',
+    modalMsg:'You roll into my life and make everything better. Happy Birthday! 🎉',
+    nextPage:3,
+    nextLabel:'Next Stage ✨',
+    color:'#FFF9E6',
+    accentColor:'#E8A020',
+  },
+  {
+    page:3,
+    title:'Stage 2: The Bubble Quest 🧋',
+    guide:'frog',
+    clue:'🔍 Clue: "I\'m cold, sweet, and full of little balls — find me and your heart fills with joy!"',
+    hint:'Think chewy little pearls… in a cup… with a straw!',
+    foods:[
+      {e:'🍦',l:'Ice Cream',ok:false},
+      {e:'🧋',l:'Boba Tea',ok:true},
+      {e:'☕',l:'Coffee',ok:false},
+      {e:'🍩',l:'Donuts',ok:false},
+    ],
+    correctEmoji:'🧋',
+    modalTitle:'You found the Boba!',
+    modalMsg:'You are absolutely tea-riffic and sweeten up every single day. 💖',
+    nextPage:4,
+    nextLabel:'Keep going! ✨',
+    color:'#EDF9F0',
+    accentColor:'#6DB97A',
+  },
+  {
+    page:4,
+    title:'Stage 3: The Noodle Riddle 🍜',
+    guide:'duck',
+    clue:'🔍 Clue: "I\'m steamy, rich, and slurp-worthy — Japan says I\'m the king of bowls!"',
+    hint:'I\'m NOT pasta. I\'m something much more comforting on a rainy day… 🌧️',
+    foods:[
+      {e:'🍝',l:'Pasta',ok:false},
+      {e:'🥗',l:'Salad',ok:false},
+      {e:'🍜',l:'Ramen',ok:true},
+      {e:'🌭',l:'Hot Dog',ok:false},
+    ],
+    correctEmoji:'🍜',
+    modalTitle:'Birthday Noods! 🍜',
+    modalMsg:'Send noods… birthday noods! Hope your day is souper amazing! ✨',
+    nextPage:5,
+    nextLabel:'Onwards! 🌟',
+    color:'#FFF0F3',
+    accentColor:'#D94F70',
+  },
+  {
+    page:5,
+    title:'Stage 4: The Sweet Vault 🍡',
+    guide:'frog',
+    clue:'🔍 Clue: "I\'m soft, round, chewy, and Japanese — I come in pastel colours and melt on your tongue!"',
+    hint:'I\'m not a cupcake, and definitely not chocolate… I\'m something more magical 🌸',
+    foods:[
+      {e:'🍡',l:'Mochi',ok:true},
+      {e:'🧁',l:'Cupcake',ok:false},
+      {e:'🍫',l:'Chocolate',ok:false},
+      {e:'🍪',l:'Cookie',ok:false},
+    ],
+    correctEmoji:'🍡',
+    modalTitle:'You found the Mochi! 🌸',
+    modalMsg:'Just like a little mochi, you are so soft, incredibly kind, and the absolute cutest person ever. 🌸🥺',
+    nextPage:6,
+    nextLabel:'Final stage! 🏆',
+    color:'#F5EEFF',
+    accentColor:'#9B6FBE',
+  },
+  {
+    page:6,
+    title:'⭐ Final Stage: The Grand Treasure 🥯',
+    guide:'both',
+    clue:'🔍 Final Clue: "I\'m your weekend ritual, your brunch holy grail — creamy, salty, perfect on a round bread sail!"',
+    hint:'Avocado + prosciutto + the best bagel in the world = YOU 💚',
+    foods:[
+      {e:'🥞',l:'Pancakes',ok:false},
+      {e:'🧇',l:'Waffles',ok:false},
+      {e:'🥯🥑🥓',l:'Bagel + Avo + Prosciutto',ok:true},
+      {e:'🍞',l:'Plain Toast',ok:false},
+    ],
+    correctEmoji:'🥯🥑🥓',
+    modalTitle:'YES! The Grand Treasure! 🏆',
+    modalMsg:'Everything is better with a little avocado, some prosciutto, and a whole lot of YOU. Adventure complete! 🥯🥑✨',
+    nextPage:7,
+    nextLabel:'See the grand finale! 🎂',
+    color:'#FFFBE6',
+    accentColor:'#E8A020',
+  },
+];
+
+/* ══════════ DUCK/FROG SVG AVATARS ══════════ */
+const DUCK_SRC ='https://api.dicebear.com/8.x/fun-emoji/svg?seed=duck&backgroundColor=ffd700&eyes=wink&mouth=adorableSmile';
+const FROG_SRC ='https://api.dicebear.com/8.x/fun-emoji/svg?seed=frog&backgroundColor=a8e6cf&eyes=cute&mouth=adorableSmile';
+const DUCK_FALLBACK="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='%23FFD700'/%3E%3Ccircle cx='38' cy='42' r='6' fill='%23333'/%3E%3Ccircle cx='62' cy='40' r='6' fill='%23333'/%3E%3Cellipse cx='50' cy='68' rx='22' ry='12' fill='%23E8A020'/%3E%3C/svg%3E";
+const FROG_FALLBACK="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='%2390EE90'/%3E%3Ccircle cx='34' cy='40' r='9' fill='%23fff'/%3E%3Ccircle cx='66' cy='40' r='9' fill='%23fff'/%3E%3Ccircle cx='36' cy='42' r='5' fill='%23333'/%3E%3Ccircle cx='68' cy='42' r='5' fill='%23333'/%3E%3Cellipse cx='50' cy='72' rx='18' ry='8' fill='%2360C060'/%3E%3C/svg%3E";
+
+function mascotImg(who, size=72){
+  const src  = who==='duck' ? DUCK_SRC : FROG_SRC;
+  const fb   = who==='duck' ? DUCK_FALLBACK : FROG_FALLBACK;
+  const cls  = who==='duck' ? 'mascot-img duck' : 'mascot-img frog';
+  return `<img class="${cls}" src="${src}" width="${size}" height="${size}" alt="${who}" onerror="this.src='${fb}'"/>`;
+}
+
+/* ══════════ BUILD HUNT PAGES ══════════ */
+function buildHuntPages(){
+  STAGES.forEach((s,idx)=>{
+    const pg=document.getElementById('p'+s.page);
+    let guideHTML='';
+    if(s.guide==='both'){
+      guideHTML=`<div style="display:flex;justify-content:center;gap:.7rem;margin-bottom:.3rem">
+        ${mascotImg('duck',62)}${mascotImg('frog',56)}
+      </div>`;
+    } else {
+      guideHTML=`<div style="display:flex;justify-content:center;margin-bottom:.3rem">${mascotImg(s.guide,68)}</div>`;
+    }
+
+    let dotsHTML='<div class="dots">';
+    for(let d=2;d<=6;d++){
+      dotsHTML+=`<div class="dot ${d<s.page?'done':d===s.page?'active':''}"></div>`;
+    }
+    dotsHTML+='</div>';
+
+    let foodsHTML='<div class="hunt-grid">';
+    s.foods.forEach((f,fi)=>{
+      foodsHTML+=`
+        <div class="hunt-cell" data-ok="${f.ok}" data-page="${s.page}" data-idx="${fi}" style="animation-delay:${fi*0.07}s">
+          <span class="food-e">${f.e}</span>
+          <span class="food-lbl">${f.l}</span>
+        </div>`;
+    });
+    foodsHTML+='</div>';
+
+    pg.innerHTML=`
+      <div class="text-center w-full max-w-lg px-2 relative z-10" style="padding-bottom:.5rem">
+        ${dotsHTML}
+        ${guideHTML}
+        <h2 class="fredoka text-xl sm:text-2xl mb-2" style="color:${s.accentColor}">${s.title}</h2>
+        <div class="clue-box max-w-sm mx-auto">
+          <span class="clue-icon">📜</span>${s.clue}
+          <div id="hint${s.page}" style="display:none;margin-top:.5rem;font-size:.8rem;color:#a070c0;font-weight:700">
+            💡 ${s.hint}
+          </div>
+        </div>
+        ${foodsHTML}
+        <button class="btn-outline mt-2" style="font-size:.8rem;padding:.3rem 1rem" onclick="showHint(${s.page})">
+          🔮 Need a hint?
+        </button>
+      </div>`;
+  });
+}
+buildHuntPages();
+
+/* ══════════ HINT ══════════ */
+function showHint(page){
+  const h=document.getElementById('hint'+page);
+  if(h) h.style.display='block';
+}
+
+/* ══════════ ROUTING ══════════ */
+let curPage=1;
+function goTo(n){
+  document.getElementById('p'+curPage).classList.remove('active');
+  setTimeout(()=>{
+    const next=document.getElementById('p'+n);
+    next.classList.add('active');
+    curPage=n;
+    if(n===7) launchFinale();
+  },320);
+}
+
+/* ══════════ AUDIO ══════════ */
+const audio=document.getElementById('bgMusic');
+let musicOn=false;
+function startMusic(){
+  if(musicOn) return;
+  audio.volume=.42;
+  audio.play().then(()=>{musicOn=true;updateMusicBtn()}).catch(()=>{});
+}
+function updateMusicBtn(){
+  document.getElementById('musicBtn').textContent=musicOn?'🎵':'🔇';
+}
+document.getElementById('musicBtn').addEventListener('click',()=>{
+  if(musicOn){audio.pause();musicOn=false;}
+  else{audio.play().then(()=>{musicOn=true;}).catch(()=>{});musicOn=true;}
+  updateMusicBtn();
+});
+
+/* ══════════ TOAST ══════════ */
+const WRONG_MSGS=[
+  'Nope! The clue says otherwise… 🐸','Hmm, not quite! Read the clue again 🗺️',
+  'So close! But think harder… 💭','Your duck guide shakes her head 🦆',
+  'Oops! Try another one! 🌟','The frog is not convinced 🐸 keep looking!',
+];
+let toastT;
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  clearTimeout(toastT);
+  toastT=setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+/* ══════════ PHOTO STORAGE ══════════ */
+const photoStore={}; // page -> {dataUrl, caption}
+
+/* ══════════ MODAL ══════════ */
+const modal=document.getElementById('modal');
+let modalNextPage=null;
+
+function openModal(stage){
+  document.getElementById('modalEmoji').textContent=stage.correctEmoji;
+  document.getElementById('modalTitle').textContent=stage.modalTitle;
+  document.getElementById('modalMsg').textContent=stage.modalMsg;
+  modalNextPage=stage.nextPage;
+
+  // reset photo zone
+  document.getElementById('photoPreview').classList.remove('visible');
+  document.getElementById('photoCaption').style.display='none';
+  document.getElementById('captionInput').value='';
+  document.getElementById('photoInput').value='';
+  document.querySelector('.photo-label').style.display='flex';
+  // update label text per stage
+  document.querySelector('.photo-label span:nth-child(2)').textContent=
+    'Add a photo to mark this food find! 📸';
+
+  modal.classList.add('open');
+}
+
+function closeModal(){
+  // save photo if set
+  const prev=document.getElementById('photoPreview');
+  if(prev.src && prev.classList.contains('visible') && modalNextPage!==null){
+    const prevPage=modalNextPage-1;
+    photoStore[prevPage]={
+      dataUrl:prev.src,
+      caption:document.getElementById('captionInput').value||''
+    };
+  }
+  modal.classList.remove('open');
+  if(modalNextPage!==null){
+    const np=modalNextPage; modalNextPage=null;
+    setTimeout(()=>goTo(np),200);
+  }
+}
+
+document.getElementById('modalNextBtn').addEventListener('click',closeModal);
+document.getElementById('modalSkipPhoto').addEventListener('click',closeModal);
+modal.addEventListener('click',e=>{if(e.target===modal)closeModal()});
+
+// Photo upload
+document.getElementById('photoInput').addEventListener('change',function(){
+  const file=this.files[0];
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    const prev=document.getElementById('photoPreview');
+    prev.src=ev.target.result;
+    prev.classList.add('visible');
+    document.getElementById('photoCaption').style.display='block';
+    document.querySelector('.photo-label').style.display='none';
+  };
+  reader.readAsDataURL(file);
+});
+
+/* ══════════ FOOD CLICKS ══════════ */
+document.addEventListener('click',e=>{
+  const cell=e.target.closest('.hunt-cell');
+  if(!cell) return;
+  const ok=cell.dataset.ok==='true';
+  const page=parseInt(cell.dataset.page);
+  const stage=STAGES.find(s=>s.page===page);
+  if(!stage) return;
+
+  if(ok){
+    // shimmer effect
+    cell.classList.add('shimmer');
+    setTimeout(()=>cell.classList.remove('shimmer'),900);
+    openModal(stage);
+  } else {
+    cell.classList.add('wrong');
+    setTimeout(()=>cell.classList.remove('wrong'),500);
+    toast(WRONG_MSGS[Math.floor(Math.random()*WRONG_MSGS.length)]);
+  }
+});
+
+/* ══════════ LANDING ══════════ */
+document.getElementById('startBtn').addEventListener('click',()=>{
+  startMusic(); goTo(2);
+});
+
+/* ══════════ FINALE ══════════ */
+function launchFinale(){
+  // confetti
+  const layer=document.getElementById('confLayer');
+  layer.innerHTML='';
+  const icons=['🦆','🐸','⭐','🌟','🎉','🎊','✨','🍡','🥯','🎂','💚','🌸','🎈','🍜','🧋','🍣'];
+  for(let i=0;i<32;i++){
+    const el=document.createElement('span');
+    el.className='conf-piece';
+    el.textContent=icons[Math.floor(Math.random()*icons.length)];
+    el.style.setProperty('--sz',(1+Math.random()*1.7)+'rem');
+    el.style.setProperty('--dur',(3.5+Math.random()*5)+'s');
+    el.style.setProperty('--dl',(Math.random()*4)+'s');
+    el.style.left=Math.random()*100+'%';
+    el.style.top='-40px';
+    layer.appendChild(el);
+  }
+
+  // build scrapbook from saved photos
+  const scrap=document.getElementById('scrapbook');
+  const items=document.getElementById('scrapItems');
+  items.innerHTML='';
+  let hasPhotos=false;
+  Object.entries(photoStore).forEach(([pg,data])=>{
+    if(data.dataUrl){
+      hasPhotos=true;
+      const wrap=document.createElement('div');
+      wrap.style.cssText='text-align:center;max-width:100px';
+      wrap.innerHTML=`
+        <img src="${data.dataUrl}" alt="stage photo"
+          style="width:90px;height:70px;object-fit:cover;border-radius:10px;
+                 box-shadow:0 3px 10px rgba(0,0,0,.15);border:2px solid #E8D5FF"/>
+        ${data.caption?`<p style="font-size:.65rem;color:#9B6FBE;font-weight:700;margin-top:.25rem">${data.caption}</p>`:''}
+      `;
+      items.appendChild(wrap);
+    }
+  });
+  if(hasPhotos) scrap.style.display='block';
+}
+
+/* ══════════ REPLAY ══════════ */
+document.getElementById('replayBtn').addEventListener('click',()=>{
+  Object.keys(photoStore).forEach(k=>delete photoStore[k]);
+  goTo(1);
+});
+</script>
+</body>
+</html>
